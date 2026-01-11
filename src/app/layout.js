@@ -1,6 +1,6 @@
 import { Toaster } from 'react-hot-toast';
 import "./globals.css";
-import { ThemeProvider } from '@/components/providers/ThemeProvider';
+import { ThemeProvider } from '@/components/Providers/ThemeProvider';
 
 // 1. Tambahkan Config Viewport
 export const viewport = {
