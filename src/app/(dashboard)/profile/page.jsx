@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/services/auth.service';
 import { User, Mail, Phone, Camera, Lock, Save, LogOut, Loader2, Moon } from 'lucide-react'; // Import Icon Moon
-import { Skeleton } from '@/components/ui/Skeleton'; 
+import { Skeleton } from '@/components/ui/Skeleton';
 import toast from 'react-hot-toast';
-import LogoutModal from '@/components/dashboard/LogoutModal'; 
+import LogoutModal from '@/components/dashboard/LogoutModal';
 import { ThemeToggle } from '@/components/ui/ThemeToggle'; // <--- IMPORT THEME TOGGLE
 
 export default function ProfilePage() {
@@ -15,7 +15,7 @@ export default function ProfilePage() {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    
+
     const [activeTab, setActiveTab] = useState('profile');
     const [showLogoutModal, setShowLogoutModal] = useState(false);
 
@@ -34,13 +34,13 @@ export default function ProfilePage() {
     const fetchProfile = async () => {
         try {
             const res = await authService.getProfile();
-            const userData = res.data || res; 
+            const userData = res.data || res;
             setUser(userData);
-            
+
             setName(userData.name || '');
             setEmail(userData.email || '');
             setPhone(userData.phone || '');
-            setPreviewAvatar(userData.avatar_url || ''); 
+            setPreviewAvatar(userData.avatar_url || '');
         } catch (error) {
             console.error("Gagal load profile:", error);
             toast.error("Gagal memuat profil.");
@@ -57,16 +57,38 @@ export default function ProfilePage() {
             formData.append('name', name);
             formData.append('email', email);
             formData.append('phone', phone);
-            if (avatar) formData.append('avatar', avatar);
 
+            if (avatar) {
+                formData.append('avatar', avatar);
+            }
             const res = await authService.updateProfile(formData);
+
             const updatedUser = res.data || res;
-            localStorage.setItem('user', JSON.stringify(updatedUser));
-            setUser(updatedUser);
+            const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+            const newUser = { ...currentUser, ...updatedUser };
+
+            localStorage.setItem('user', JSON.stringify(newUser));
+            setUser(newUser);
+
+            if (newUser.avatar_url) {
+                setPreviewAvatar(newUser.avatar_url);
+            }
+
             toast.success("Profil berhasil diperbarui!");
         } catch (error) {
-            console.error("Update error:", error);
-            toast.error(error.response?.data?.message || "Gagal update profil.");
+            console.error("Update error FULL:", error.response?.data);
+
+            let errorMessage = "Gagal update profil.";
+
+            if (error.response?.data?.errors) {
+                const errors = error.response.data.errors;
+                const firstField = Object.keys(errors)[0];
+                errorMessage = `${firstField}: ${errors[firstField][0]}`;
+            } else if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            }
+
+            toast.error(errorMessage);
         } finally {
             setSaving(false);
         }
@@ -87,12 +109,12 @@ export default function ProfilePage() {
             setSaving(false);
         }
     };
-    
+
     const handleAvatarChange = (e) => {
         const file = e.target.files[0];
         if (file) {
             setAvatar(file);
-            setPreviewAvatar(URL.createObjectURL(file)); 
+            setPreviewAvatar(URL.createObjectURL(file));
         }
     };
 
@@ -101,7 +123,7 @@ export default function ProfilePage() {
     };
 
     const executeLogout = async () => {
-        setSaving(true); 
+        setSaving(true);
         try {
             await authService.logout();
             localStorage.clear();
@@ -146,7 +168,7 @@ export default function ProfilePage() {
             <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Pengaturan Akun</h1>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                
+
                 {/* --- CARD KIRI (MENU & FOTO) --- */}
                 <div className="md:col-span-1 space-y-6">
                     <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm text-center">
@@ -168,29 +190,27 @@ export default function ProfilePage() {
                     </div>
 
                     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                        <button 
+                        <button
                             onClick={() => setActiveTab('profile')}
-                            className={`w-full text-left px-5 py-3 text-sm font-medium flex items-center gap-3 transition-colors ${
-                                activeTab === 'profile' 
-                                ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 border-l-4 border-brand-600 dark:border-brand-400' 
+                            className={`w-full text-left px-5 py-3 text-sm font-medium flex items-center gap-3 transition-colors ${activeTab === 'profile'
+                                ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 border-l-4 border-brand-600 dark:border-brand-400'
                                 : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                            }`}
+                                }`}
                         >
                             <User size={18} /> Edit Profil
                         </button>
-                        <button 
+                        <button
                             onClick={() => setActiveTab('password')}
-                            className={`w-full text-left px-5 py-3 text-sm font-medium flex items-center gap-3 transition-colors ${
-                                activeTab === 'password' 
-                                ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 border-l-4 border-brand-600 dark:border-brand-400' 
+                            className={`w-full text-left px-5 py-3 text-sm font-medium flex items-center gap-3 transition-colors ${activeTab === 'password'
+                                ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 border-l-4 border-brand-600 dark:border-brand-400'
                                 : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                            }`}
+                                }`}
                         >
                             <Lock size={18} /> Ganti Password
                         </button>
-                        
+
                         <div className="border-t border-slate-100 dark:border-slate-800 my-1"></div>
-                        
+
                         {/* --- BAGIAN TOGGLE TEMA BARU --- */}
                         <div className="px-5 py-3 flex items-center justify-between">
                             <span className="text-sm font-medium text-slate-600 dark:text-slate-400 flex items-center gap-3">
@@ -201,8 +221,8 @@ export default function ProfilePage() {
                         </div>
 
                         <div className="border-t border-slate-100 dark:border-slate-800 my-1"></div>
-                        
-                        <button 
+
+                        <button
                             onClick={handleLogoutClick}
                             className="w-full text-left px-5 py-3 text-sm font-medium flex items-center gap-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                         >
@@ -214,8 +234,8 @@ export default function ProfilePage() {
                 {/* --- CARD KANAN (FORM) --- */}
                 {/* (Isi Card Kanan Tetap Sama dengan sebelumnya) */}
                 <div className="md:col-span-2">
-                     <div className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                        
+                    <div className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+
                         {/* TAB 1: EDIT PROFILE */}
                         {activeTab === 'profile' && (
                             <form onSubmit={handleUpdateProfile} className="space-y-5 animate-slide-up">
@@ -228,11 +248,11 @@ export default function ProfilePage() {
                                         <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Nama Lengkap</label>
                                         <div className="relative">
                                             <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                            <input 
-                                                type="text" 
-                                                value={name} 
-                                                onChange={(e) => setName(e.target.value)} 
-                                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-colors" 
+                                            <input
+                                                type="text"
+                                                value={name}
+                                                onChange={(e) => setName(e.target.value)}
+                                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-colors"
                                             />
                                         </div>
                                     </div>
@@ -240,11 +260,11 @@ export default function ProfilePage() {
                                         <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Email</label>
                                         <div className="relative">
                                             <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                            <input 
-                                                type="email" 
-                                                value={email} 
-                                                onChange={(e) => setEmail(e.target.value)} 
-                                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-colors" 
+                                            <input
+                                                type="email"
+                                                value={email}
+                                                onChange={(e) => setEmail(e.target.value)}
+                                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-colors"
                                             />
                                         </div>
                                     </div>
@@ -252,19 +272,19 @@ export default function ProfilePage() {
                                         <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">No. WhatsApp</label>
                                         <div className="relative">
                                             <Phone size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                            <input 
-                                                type="text" 
-                                                value={phone} 
-                                                onChange={(e) => setPhone(e.target.value)} 
-                                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-colors" 
-                                                placeholder="Contoh: 08123456789" 
+                                            <input
+                                                type="text"
+                                                value={phone}
+                                                onChange={(e) => setPhone(e.target.value)}
+                                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-colors"
+                                                placeholder="Contoh: 08123456789"
                                             />
                                         </div>
                                     </div>
                                 </div>
                                 <div className="pt-4 flex justify-end">
                                     <button type="submit" disabled={saving} className="bg-brand-600 hover:bg-brand-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-brand-500/20 flex items-center gap-2 transition-all disabled:opacity-70">
-                                        {saving ? <Loader2 className="animate-spin" size={18}/> : <Save size={18}/>} Simpan Perubahan
+                                        {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />} Simpan Perubahan
                                     </button>
                                 </div>
                             </form>
@@ -282,12 +302,12 @@ export default function ProfilePage() {
                                         <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Password Saat Ini</label>
                                         <div className="relative">
                                             <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                            <input 
-                                                type="password" 
-                                                value={currentPassword} 
-                                                onChange={(e) => setCurrentPassword(e.target.value)} 
-                                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-colors" 
-                                                placeholder="••••••••" 
+                                            <input
+                                                type="password"
+                                                value={currentPassword}
+                                                onChange={(e) => setCurrentPassword(e.target.value)}
+                                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-colors"
+                                                placeholder="••••••••"
                                             />
                                         </div>
                                     </div>
@@ -295,19 +315,19 @@ export default function ProfilePage() {
                                         <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Password Baru</label>
                                         <div className="relative">
                                             <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                            <input 
-                                                type="password" 
-                                                value={newPassword} 
-                                                onChange={(e) => setNewPassword(e.target.value)} 
-                                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-colors" 
-                                                placeholder="Min. 8 Karakter" 
+                                            <input
+                                                type="password"
+                                                value={newPassword}
+                                                onChange={(e) => setNewPassword(e.target.value)}
+                                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-colors"
+                                                placeholder="Min. 8 Karakter"
                                             />
                                         </div>
                                     </div>
                                 </div>
                                 <div className="pt-4 flex justify-end">
                                     <button type="submit" disabled={saving} className="bg-brand-600 hover:bg-brand-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-brand-500/20 flex items-center gap-2 transition-all disabled:opacity-70">
-                                        {saving ? <Loader2 className="animate-spin" size={18}/> : <Save size={18}/>} Update Password
+                                        {saving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />} Update Password
                                     </button>
                                 </div>
                             </form>
@@ -316,8 +336,8 @@ export default function ProfilePage() {
                 </div>
             </div>
 
-            <LogoutModal 
-                isOpen={showLogoutModal} 
+            <LogoutModal
+                isOpen={showLogoutModal}
                 onClose={() => setShowLogoutModal(false)}
                 onConfirm={executeLogout}
                 loading={saving}

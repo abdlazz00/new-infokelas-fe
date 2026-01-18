@@ -1,4 +1,5 @@
 import api from '@/lib/axios';
+import axios from 'axios';
 
 export const authService = {
   login: async (identifier, password) => {
@@ -36,9 +37,11 @@ export const authService = {
   },
 
   updateProfile: async (formData) => {
-    const res = await api.post('/profile/update', formData, {
+    const token = localStorage.getItem('token');
+    const res = await axios.post(`${api.defaults.baseURL}/profile/update`, formData, {
       headers: {
-        'Content-Type': 'multipart/form-data'
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
       }
     });
     return res.data;
