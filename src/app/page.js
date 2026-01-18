@@ -1,23 +1,64 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, BookOpen, Calendar, Bell, Shield, Users, Zap } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ArrowRight, BookOpen, Calendar, Bell, Shield, Users, Zap, Loader2 } from 'lucide-react'; // Tambah Loader2
 import { useEffect, useState } from 'react';
-import LoginModal from '@/components/auth/LoginModal'; // <--- 1. Import Modal
+import LoginModal from '@/components/auth/LoginModal';
 
 export default function LandingPage() {
+    const router = useRouter();
     const [scrolled, setScrolled] = useState(false);
-    const [isLoginOpen, setIsLoginOpen] = useState(false); // <--- 2. State untuk Modal
+    const [isLoginOpen, setIsLoginOpen] = useState(false);
+    
+    // STATE BARU: Default TRUE agar loading screen muncul duluan
+    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-    // Efek Navbar Transparan ke Solid saat scroll
+    // Efek Navbar Transparan
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 20);
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    // --- LOGIC AUTO LOGIN (DIPERBAIKI) ---
+    useEffect(() => {
+        const checkAuth = () => {
+            // Cek LocalStorage (Permanen) atau SessionStorage (Sementara)
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            const user = localStorage.getItem('user') || sessionStorage.getItem('user');
+
+            if (token && user) {
+                // Jika user login, redirect ke dashboard
+                router.replace('/dashboard');
+                // Kita TIDAK set isCheckingAuth(false) agar loading screen tetap ada
+                // sampai halaman berpindah sepenuhnya.
+            } else {
+                // Jika user BELUM login, matikan loading dan tampilkan Landing Page
+                setIsCheckingAuth(false);
+            }
+        };
+
+        checkAuth();
+    }, [router]);
+
+    // --- TAMPILAN LOADING SCREEN (SPLASH SCREEN) ---
+    // Ini yang akan muncul pertama kali saat PWA dibuka
+    if (isCheckingAuth) {
+        return (
+            <div className="min-h-screen bg-white flex flex-col items-center justify-center">
+                <div className="w-16 h-16 bg-brand-600 rounded-2xl flex items-center justify-center text-white mb-4 animate-bounce">
+                    <BookOpen size={32} />
+                </div>
+                <Loader2 className="animate-spin text-brand-600" size={24} />
+                <p className="text-slate-400 text-sm mt-2 font-medium">Memuat InfoKelas...</p>
+            </div>
+        );
+    }
+
+    // --- TAMPILAN LANDING PAGE UTAMA ---
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-brand-500/30">
+        <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-brand-500/30 animate-in fade-in duration-500">
             
             {/* --- NAVBAR --- */}
             <nav className={`fixed top-0 w-full z-40 transition-all duration-300 ${
@@ -34,7 +75,6 @@ export default function LandingPage() {
                     </div>
 
                     <div className="flex items-center gap-4">
-                        {/* 3. Ubah Tombol Masuk: Dari Link menjadi Button dengan onClick */}
                         <button 
                             onClick={() => setIsLoginOpen(true)}
                             className="text-sm font-bold text-slate-600 hover:text-brand-600 transition-colors hidden sm:block"
@@ -54,7 +94,6 @@ export default function LandingPage() {
 
             {/* --- HERO SECTION --- */}
             <header className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
-                {/* Background Decor */}
                 <div className="absolute top-0 right-0 -mr-20 -mt-20 w-[500px] h-[500px] bg-brand-500/10 rounded-full blur-3xl -z-10 animate-pulse"></div>
                 <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-[300px] h-[300px] bg-blue-500/10 rounded-full blur-3xl -z-10"></div>
 
@@ -75,7 +114,6 @@ export default function LandingPage() {
                     </p>
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up" style={{animationDelay: '0.3s'}}>
-                        {/* 4. Update CTA Utama: "Mulai Sekarang" memicu Login Modal */}
                         <button 
                             onClick={() => setIsLoginOpen(true)}
                             className="w-full sm:w-auto px-8 py-4 bg-brand-600 hover:bg-brand-700 text-white rounded-2xl font-bold text-lg shadow-xl shadow-brand-500/30 hover:shadow-brand-500/40 transition-all hover:-translate-y-1"
@@ -195,7 +233,6 @@ export default function LandingPage() {
                 </div>
             </footer>
 
-            {/* 5. Render Modal Component */}
             <LoginModal 
                 isOpen={isLoginOpen} 
                 onClose={() => setIsLoginOpen(false)} 
