@@ -11,5 +11,12 @@ export const materialService = {
   getDetail: async (id) => {
     const res = await api.get(`/materials/${id}`);
     return res.data;
+  },
+
+  download: async (id) => {
+    const res = await api.get(`/materials/${id}/download`, {
+      responseType: 'blob',
+    });
+    return res;
   }
 };

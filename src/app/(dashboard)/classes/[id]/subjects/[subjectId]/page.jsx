@@ -31,12 +31,33 @@ export default function SubjectMaterialsPage() {
         }
     };
 
-    // Helper untuk membuat URL Download ke Backend
-    const getDownloadUrl = (id) => {
-        // Pastikan NEXT_PUBLIC_API_URL sudah diset di .env.local
-        // Contoh output: https://admin.infokelas.com/api/materials/15/download
-        return `${process.env.NEXT_PUBLIC_API_URL}/materials/${id}/download`;
-    };
+    const handleDownload = async (id, title) => {
+        const toastId = toast.loading("Mendownload...");
+        try {
+            const res = await materialService.download(id);
+            
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+
+            const mimeType = res.data.type;
+            const extension = mimeType.split('/')[1] || 'pdf';
+
+            const safeTitle = title.replace(/[^a-zA-Z0-9]/g, '_');
+            link.setAttribute('download', `${safeTitle}.${extension}`);
+
+            document.body.appendChild(link);
+            link.click();
+
+            link.parentNode.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            toast.success("Download berhasil!", {id: toastId});
+        } catch (error) {
+            console.error("Download error:", error);
+            toast.error("Gagal mendownload file.", { id: toastId });
+        }
+    }
 
     const getFileIcon = (item) => {
         if (item.file_url) return <FileText size={24} />;
@@ -115,13 +136,12 @@ export default function SubjectMaterialsPage() {
                                             </a>
 
                                             {/* DOWNLOAD BUTTON: Mengarah ke API Backend untuk Force Download */}
-                                            <a 
-                                                href={getDownloadUrl(item.id)}
-                                                // Kita tidak perlu atribut 'download' di sini karena backend mengirim header Content-Disposition
-                                                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 text-xs font-bold hover:bg-brand-100 dark:hover:bg-brand-900/40 transition-colors border border-brand-100 dark:border-brand-800"
+                                            <button 
+                                                onClick={() => handleDownload(item.id, item.title)}
+                                                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 text-xs font-bold hover:bg-brand-100 dark:hover:bg-brand-900/40 transition-colors border border-brand-100 dark:border-brand-800 cursor-pointer"
                                             >
                                                 <Download size={16} /> <span className="hidden sm:inline">Download</span>
-                                            </a>
+                                            </button>
                                         </>
                                     ) : (
                                         // LINK EXTERNAL
