@@ -1,0 +1,9 @@
+services:
+  infokelas-next:
+    build: .
+    container_name: infokelas-next
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
