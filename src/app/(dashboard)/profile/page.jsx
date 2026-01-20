@@ -123,17 +123,15 @@ export default function ProfilePage() {
         setSaving(true);
         try {
             await authService.logout();
-            // Bersihkan storage lokal
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             
             toast.success("Berhasil logout");
-            router.replace('/login');
+            router.replace('/');
         } catch (error) {
             console.error("Logout error:", error);
-            // Tetap paksa logout di client side jika server error
             localStorage.removeItem('token');
-            router.replace('/login');
+            router.replace('/');
         } finally {
             setSaving(false);
             setShowLogoutModal(false);

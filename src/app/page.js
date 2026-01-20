@@ -1,8 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image'; // Import Image dari Next.js
 import { useRouter } from 'next/navigation';
-import { ArrowRight, BookOpen, Calendar, Bell, Shield, Users, Zap, Loader2 } from 'lucide-react'; // Tambah Loader2
+import { 
+    ArrowRight, BookOpen, Calendar, Bell, Shield, Users, Zap, Loader2, 
+    ChevronLeft, ChevronRight // Tambah icon navigasi
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import LoginModal from '@/components/auth/LoginModal';
 
@@ -10,9 +14,15 @@ export default function LandingPage() {
     const router = useRouter();
     const [scrolled, setScrolled] = useState(false);
     const [isLoginOpen, setIsLoginOpen] = useState(false);
-    
-    // STATE BARU: Default TRUE agar loading screen muncul duluan
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+    const [currentSlide, setCurrentSlide] = useState(0);
+    
+    const slides = [
+        { src: '/landing-slides/slide-1.png', alt: 'Dashboard Overview' },
+        { src: '/landing-slides/slide-2.png', alt: 'Jadwal Kuliah' },
+        { src: '/landing-slides/slide-3.png', alt: 'Manajemen Kelas' },
+    ];
 
     // Efek Navbar Transparan
     useEffect(() => {
@@ -21,29 +31,33 @@ export default function LandingPage() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // --- LOGIC AUTO LOGIN (DIPERBAIKI) ---
+    // --- LOGIC AUTO LOGIN ---
     useEffect(() => {
         const checkAuth = () => {
-            // Cek LocalStorage (Permanen) atau SessionStorage (Sementara)
             const token = localStorage.getItem('token') || sessionStorage.getItem('token');
             const user = localStorage.getItem('user') || sessionStorage.getItem('user');
 
             if (token && user) {
-                // Jika user login, redirect ke dashboard
                 router.replace('/dashboard');
-                // Kita TIDAK set isCheckingAuth(false) agar loading screen tetap ada
-                // sampai halaman berpindah sepenuhnya.
             } else {
-                // Jika user BELUM login, matikan loading dan tampilkan Landing Page
                 setIsCheckingAuth(false);
             }
         };
-
         checkAuth();
     }, [router]);
 
-    // --- TAMPILAN LOADING SCREEN (SPLASH SCREEN) ---
-    // Ini yang akan muncul pertama kali saat PWA dibuka
+    // --- LOGIC AUTO SLIDE CAROUSEL ---
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentSlide((prev) => (prev + 1) % slides.length);
+        }, 5000); // Ganti slide setiap 5 detik
+        return () => clearInterval(timer);
+    }, [slides.length]);
+
+    const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % slides.length);
+    const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+
+    // --- TAMPILAN LOADING ---
     if (isCheckingAuth) {
         return (
             <div className="min-h-screen bg-white flex flex-col items-center justify-center">
@@ -81,13 +95,6 @@ export default function LandingPage() {
                         >
                             Masuk
                         </button>
-                        
-                        <Link 
-                            href="/register" 
-                            className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-slate-900/20 hover:-translate-y-0.5 flex items-center gap-2"
-                        >
-                            Daftar Sekarang <ArrowRight size={16} />
-                        </Link>
                     </div>
                 </div>
             </nav>
@@ -128,17 +135,67 @@ export default function LandingPage() {
                         </Link>
                     </div>
 
-                    {/* Mockup Preview */}
-                    <div className="mt-16 relative mx-auto max-w-5xl rounded-3xl border border-slate-200 bg-white/50 backdrop-blur-sm p-2 shadow-2xl animate-slide-up" style={{animationDelay: '0.5s'}}>
+                    {/* --- CAROUSEL PREVIEW START --- */}
+                    <div className="mt-16 relative mx-auto max-w-5xl rounded-3xl border border-slate-200 bg-white/50 backdrop-blur-sm p-3 shadow-2xl animate-slide-up" style={{animationDelay: '0.5s'}}>
                         <div className="rounded-2xl overflow-hidden bg-slate-100 aspect-[16/9] relative group">
-                            <div className="absolute inset-0 flex items-center justify-center text-slate-300">
-                                <div className="text-center">
-                                    <div className="w-20 h-20 bg-slate-200 rounded-2xl mx-auto mb-4 animate-pulse"></div>
-                                    <p className="font-bold text-xl">Dashboard Preview</p>
-                                </div>
+                            
+                            {/* Slide Images */}
+                            <div className="relative w-full h-full">
+                                {slides.map((slide, index) => (
+                                    <div 
+                                        key={index}
+                                        className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+                                            index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
+                                        }`}
+                                    >
+                                        {/* Gunakan Next/Image untuk performa, tapi fallback ke div jika error */}
+                                        <div className="w-full h-full bg-slate-200 flex items-center justify-center text-slate-400 relative">
+                                             <Image 
+                                                src={slide.src} 
+                                                alt={slide.alt}
+                                                fill
+                                                className="object-cover object-top"
+                                                priority={index === 0}
+                                             />
+                                             {/* Placeholder text jika gambar tidak ketemu */}
+                                             <span className="absolute z-[-1] font-medium">Image not found: {slide.src}</span>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
+
+                            {/* Navigation Buttons (Muncul saat hover) */}
+                            <button 
+                                onClick={prevSlide}
+                                className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white/80 hover:bg-white backdrop-blur rounded-full flex items-center justify-center text-slate-700 shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
+                            >
+                                <ChevronLeft size={20} />
+                            </button>
+                            <button 
+                                onClick={nextSlide}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 bg-white/80 hover:bg-white backdrop-blur rounded-full flex items-center justify-center text-slate-700 shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
+                            >
+                                <ChevronRight size={20} />
+                            </button>
+
+                            {/* Dots Indicators */}
+                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+                                {slides.map((_, index) => (
+                                    <button
+                                        key={index}
+                                        onClick={() => setCurrentSlide(index)}
+                                        className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                                            currentSlide === index 
+                                                ? 'bg-brand-600 w-8' 
+                                                : 'bg-slate-300 hover:bg-slate-400'
+                                        }`}
+                                    />
+                                ))}
+                            </div>
+
                         </div>
                     </div>
+                    {/* --- CAROUSEL PREVIEW END --- */}
                 </div>
             </header>
 
@@ -174,7 +231,7 @@ export default function LandingPage() {
             </section>
 
             {/* --- STATS SECTION --- */}
-            <section className="py-20 bg-slate-50">
+            {/* <section className="py-20 bg-slate-50">
                 <div className="container mx-auto px-6">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
                         <StatItem value="1000+" label="Mahasiswa Aktif" />
@@ -183,7 +240,7 @@ export default function LandingPage() {
                         <StatItem value="24/7" label="Akses Sistem" />
                     </div>
                 </div>
-            </section>
+            </section> */}
 
             {/* --- CTA BOTTOM --- */}
             <section className="py-20">
@@ -195,12 +252,16 @@ export default function LandingPage() {
                         <div className="relative z-10 max-w-3xl mx-auto">
                             <h2 className="text-3xl md:text-5xl font-bold mb-6">Siap Mengatur Akademik Anda?</h2>
                             <p className="text-brand-100 text-lg mb-8">Bergabunglah dengan ribuan mahasiswa lainnya yang telah beralih ke cara belajar yang lebih cerdas.</p>
-                            <Link 
-                                href="/register" 
+                            
+                            {/* UPDATE: Menggunakan tag <a> untuk link WhatsApp */}
+                            <a 
+                                href="https://wa.me/6285668348028?text=Halo%20Admin%20InfoKelas,%20saya%20tertarik%20untuk%20mendaftar." 
+                                target="_blank" 
+                                rel="noopener noreferrer"
                                 className="inline-block bg-white text-brand-600 px-8 py-4 rounded-xl font-bold text-lg hover:bg-brand-50 transition-colors shadow-lg"
                             >
-                                Daftar Gratis Sekarang
-                            </Link>
+                                Hubungi via WhatsApp
+                            </a>
                         </div>
                     </div>
                 </div>
