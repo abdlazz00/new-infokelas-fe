@@ -12,9 +12,15 @@ export const viewport = {
 };
 
 export const metadata = {
-  title: "InfoKelas - Aplikasi Akademik",
-  description: "Pantau jadwal dan tugas kuliah.",
-  manifest: "/manifest.webmanifest", // Link otomatis ke file manifest.js tadi
+  title: {
+    default: 'InfoKelas - Platform Manajemen Kelas',
+    template: '%s | InfoKelas',
+  },
+  description: 'Aplikasi manajemen kelas yang memudahkan guru dan siswa dalam kegiatan belajar mengajar.',
+  
+  verification: {
+    google: 'google-site-verification=t7lagYD6wpBAVzU4NWRvKWsFCUp7rlaMomhW0yzzoqI', 
+  },
 };
 
 export default function RootLayout({ children }) {
